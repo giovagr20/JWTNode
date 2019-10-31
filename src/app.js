@@ -5,5 +5,6 @@ app.set('port', process.env.PORT || 3000);
 
 app.use(express.json());
 app.use(express.urlencoded({extended: false})); //Convierte datos enviados por form a JSON
+app.use(require('./controllers/auth.controller'));
 
 module.exports = app;
