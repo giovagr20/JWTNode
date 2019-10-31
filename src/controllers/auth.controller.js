@@ -31,7 +31,7 @@ router.post('/signin', (req,res)=>{
         "message": "signin"
     });
 });
-router.get('/me', (req,res)=>{
+router.get('/me', async(req,res)=>{
     const token = req.headers['x-access-token'];
     if(!token){
         return res.status(401).json({
@@ -40,11 +40,12 @@ router.get('/me', (req,res)=>{
         })
     }
     const decoded = jwt.verify(token, config.secretKey);
-    console.log(decoded);
+    const user = await User.findById(decoded.id, {password: 0});
+    if(!user){
+        return res.status(404).send('No user found');
+    }
+    res.json(user);
     
-    res.json({
-        "message": "welcome app"
-    });
 });
 
 
