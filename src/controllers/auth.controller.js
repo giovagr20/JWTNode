@@ -4,6 +4,7 @@ const jwt = require('jsonwebtoken');
 
 const User = require('../models/models.user');
 const config = require('../config');
+const verifyToken = require('../verifyToken');
 
 router.post('/signup', async(req,res)=>{
     const{username, email, password} = req.body;
@@ -26,21 +27,28 @@ router.post('/signup', async(req,res)=>{
 });
 
 
-router.post('/signin', (req,res)=>{
-    res.json({
-        "message": "signin"
-    });
+router.post('/signin', async(req,res)=>{
+   const {email, password} = req.body;
+   
+   const user = await User.findOne({email: email});
+   if(!user){
+       return res.status(404).send("Email doesn't exists");
+   }
+   const validPassword = await user.validatePassword(password);
+   if(!validPassword){
+       return res.status(401).json({
+           auth: false,
+           token: null
+       })}
+    const token=jwt.sign({id: user.id}, config.secretKey,
+        {
+            expiresIn:60*60*24
+        });
+        res.json({auth: true, token})
+   
 });
-router.get('/me', async(req,res)=>{
-    const token = req.headers['x-access-token'];
-    if(!token){
-        return res.status(401).json({
-            auth: false,
-            message: 'No token provided'
-        })
-    }
-    const decoded = jwt.verify(token, config.secretKey);
-    const user = await User.findById(decoded.id, {password: 0});
+router.get('/me', verifyToken ,async(req,res)=>{
+    const user = await User.findById(req.userId, {password: 0});
     if(!user){
         return res.status(404).send('No user found');
     }
